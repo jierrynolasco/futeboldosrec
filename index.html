@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pelada REC">
+<title>Pelada de REC</title>
+<script>
+// Registra service worker para funcionar offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    var swCode = [
+      "var CACHE='pelada-rec-v1';",
+      "var FILES=['/'];",
+      "self.addEventListener('install',function(e){",
+      "  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES);}));",
+      "});",
+      "self.addEventListener('fetch',function(e){",
+      "  e.respondWith(caches.match(e.request).then(function(r){",
+      "    return r||fetch(e.request);",
+      "  }));",
+      "});"
+    ].join('');
+    var blob = new Blob([swCode], {type:'application/javascript'});
+    var url  = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).catch(function(){});
+  });
+}
+// Injeta manifest dinamicamente (sem arquivo externo)
+(function() {
+  var manifest = {
+    name: "Pelada de REC",
+    short_name: "PeladaREC",
+    description: "Sorteio de times dos Amazonians",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#05070d",
+    theme_color: "#05070d",
+    orientation: "portrait-primary",
+    icons: [
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300ff9d'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%2305070d'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300ff9d'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%2305070d'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+    ]
+  };
+  var blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  var url  = URL.createObjectURL(blob);
+  var link = document.createElement('link');
+  link.rel  = 'manifest';
+  link.href = url;
+  document.head.appendChild(link);
+})();
+</script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; -webkit-tap-highlight-color:transparent; }
+body { background:#05070d; color:#fff; min-height:100vh; padding:24px 16px; padding-top:max(env(safe-area-inset-top,0px),24px); overscroll-behavior:none; }
+.container { max-width:1300px; margin:0 auto; }
+.header { text-align:center; margin-bottom:28px; }
+.title { font-size:2.6rem; font-weight:900; letter-spacing:4px; color:#00ff9d; line-height:1; }
+.title span { color:#00c3ff; }
+.subtitle { color:#64748b; font-size:0.85rem; margin-top:6px; letter-spacing:3px; text-transform:uppercase; }
+.controls { display:flex; justify-content:center; margin-bottom:22px; }
+.control-group { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.control-label { font-size:0.7rem; letter-spacing:3px; color:#475569; text-transform:uppercase; }
+.team-selector { display:flex; gap:8px; }
+.team-btn { background:#0d1520; border:2px solid #1e2d40; color:#475569; width:48px; height:48px; border-radius:10px; font-size:1.1rem; font-weight:700; cursor:pointer; touch-action:manipulation; }
+.team-btn.active { background:#001a0d; border-color:#00ff9d; color:#00ff9d; }
+.section-label { text-align:center; font-size:0.7rem; letter-spacing:3px; color:#475569; text-transform:uppercase; margin-bottom:12px; }
+.input-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:8px; margin-bottom:22px; }
+.player-row { display:flex; }
+.row-num { background:#0a1018; border:2px solid #1e2d40; border-right:none; padding:0 10px; border-radius:11px 0 0 11px; color:#00ff9d; font-size:0.8rem; font-weight:700; display:flex; align-items:center; min-width:32px; justify-content:center; }
+.player-input { flex:1; background:#0d1520; border:2px solid #1e2d40; border-right:none; border-left:none; padding:13px 10px; color:#fff; font-size:1rem; font-weight:600; min-width:0; }
+.player-input:focus { outline:none; border-color:#00ff9d; background:#0a1a10; }
+.goals-input { width:64px; background:#0d1520; border:2px solid #1e2d40; border-left:none; padding:13px 8px; border-radius:0 11px 11px 0; color:#f97316; font-size:1rem; font-weight:700; text-align:center; }
+.goals-input:focus { outline:none; border-color:#f97316; background:#1a0d00; }
+.goals-input::placeholder { color:#3a2a10; font-size:0.7rem; }
+.actions { display:flex; justify-content:center; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
+.draw-btn { background:linear-gradient(135deg,#00ff9d,#00c3ff); color:#04111d; border:none; padding:15px 32px; font-size:1rem; font-weight:900; letter-spacing:2px; border-radius:14px; cursor:pointer; text-transform:uppercase; touch-action:manipulation; }
+.draw-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.reset-btn,.hist-btn,.save-btn,.share-btn { padding:13px 16px; font-size:0.82rem; font-weight:700; letter-spacing:1px; border-radius:12px; cursor:pointer; text-transform:uppercase; touch-action:manipulation; }
+.reset-btn { background:transparent; color:#475569; border:2px solid #1e2d40; }
+.hist-btn  { background:transparent; color:#a855f7; border:2px solid #a855f744; }
+.save-btn  { background:transparent; color:#00c3ff; border:2px solid #00c3ff44; }
+.share-btn { background:transparent; color:#f97316; border:2px solid #f9731644; display:none; }
+.saved-indicator { text-align:center; font-size:0.7rem; letter-spacing:2px; color:#00c3ff; text-transform:uppercase; margin-top:-20px; margin-bottom:14px; display:none; }
+.toast { position:fixed; top:max(env(safe-area-inset-top,0px),16px); left:50%; transform:translateX(-50%) translateY(-120px); background:#1e293b; border:2px solid #ef4444; color:#fca5a5; padding:12px 22px; border-radius:12px; font-size:0.9rem; font-weight:700; letter-spacing:1px; z-index:9999; white-space:nowrap; transition:transform 0.4s ease; max-width:90vw; text-align:center; }
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.green { border-color:#00ff9d; color:#00ff9d; }
+.toast.blue  { border-color:#00c3ff; color:#00c3ff; }
+.overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(5,7,13,0.96); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; visibility:hidden; opacity:0; transition:opacity 0.3s; }
+.overlay.active { visibility:visible; opacity:1; }
+.overlay-title { font-size:1.6rem; font-weight:900; letter-spacing:4px; color:#00ff9d; margin-bottom:24px; text-transform:uppercase; }
+.shuffle-names { display:flex; flex-direction:column; gap:8px; align-items:center; }
+.shuffle-name { font-size:1.3rem; font-weight:700; color:#e2e8f0; padding:10px 32px; background:#0d1520; border:2px solid #1e2d40; border-radius:12px; min-width:240px; text-align:center; }
+.balance-info { text-align:center; margin-bottom:14px; font-size:0.7rem; letter-spacing:2px; color:#475569; text-transform:uppercase; display:none; }
+.balance-info b { color:#00ff9d; }
+.funny-banner { display:none; text-align:center; margin-bottom:18px; background:linear-gradient(135deg,#1a0d2a,#0d1520); border:2px solid #a855f744; border-radius:14px; padding:14px 18px; }
+.funny-banner p { font-size:0.95rem; font-weight:700; color:#e2e8f0; letter-spacing:1px; }
+.teams { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; }
+.team { background:#0a1018; border:1px solid #1e2d40; border-radius:18px; padding:18px; }
+.team-header { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:4px; flex-wrap:wrap; }
+.team-title { font-size:1.4rem; font-weight:900; letter-spacing:3px; text-transform:uppercase; }
+.team-ovr { font-size:0.62rem; font-weight:700; letter-spacing:2px; padding:3px 9px; border-radius:8px; background:rgba(0,0,0,0.4); text-transform:uppercase; }
+.team-nickname { text-align:center; font-size:0.68rem; letter-spacing:2px; color:#64748b; text-transform:uppercase; margin-bottom:12px; font-style:italic; }
+.reshuffle-btn { background:transparent; border:1px solid #1e2d40; color:#475569; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; touch-action:manipulation; }
+.team[data-c="green"]  { border-top:3px solid #00ff9d; } .team[data-c="blue"]   { border-top:3px solid #00c3ff; }
+.team[data-c="purple"] { border-top:3px solid #a855f7; } .team[data-c="orange"] { border-top:3px solid #f97316; }
+.team[data-c="pink"]   { border-top:3px solid #ec4899; }
+.team[data-c="green"]  .team-title { color:#00ff9d; } .team[data-c="blue"]   .team-title { color:#00c3ff; }
+.team[data-c="purple"] .team-title { color:#a855f7; } .team[data-c="orange"] .team-title { color:#f97316; }
+.team[data-c="pink"]   .team-title { color:#ec4899; }
+.team[data-c="green"]  .team-ovr { color:#00ff9d; border:1px solid #00ff9d44; } .team[data-c="blue"]   .team-ovr { color:#00c3ff; border:1px solid #00c3ff44; }
+.team[data-c="purple"] .team-ovr { color:#a855f7; border:1px solid #a855f744; } .team[data-c="orange"] .team-ovr { color:#f97316; border:1px solid #f9731644; }
+.team[data-c="pink"]   .team-ovr { color:#ec4899; border:1px solid #ec489944; }
+.cards { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.card-wrapper { perspective:800px; height:235px; }
+.card-inner { position:relative; width:100%; height:100%; transform-style:preserve-3d; transform:rotateY(180deg); transition:transform 0.6s ease; }
+.card-wrapper.revealed .card-inner { transform:rotateY(0deg); }
+.card-back { position:absolute; top:0; left:0; width:100%; height:100%; backface-visibility:hidden; -webkit-backface-visibility:hidden; background:linear-gradient(160deg,#0d1520,#060d18); border:2px solid #1e3a5f33; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:2rem; }
+.card { position:absolute; top:0; left:0; width:100%; height:100%; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(0deg); border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#1a2740 0%,#0d1520 60%,#060d18 100%); border:2px solid #1e3a5f33; display:flex; flex-direction:column; justify-content:space-between; padding:10px; }
+.card.captain { border-color:gold; }
+.card.mvp { background:linear-gradient(160deg,#3a2800 0%,#1a1200 60%,#0d0900 100%) !important; border-color:#ffd700 !important; animation:mvpGlow 1.8s ease-in-out infinite alternate; }
+@keyframes mvpGlow { from{box-shadow:0 0 12px #ffd70055;} to{box-shadow:0 0 32px #ffd700aa;} }
+.card.mvp .player-name { color:#ffd700; } .card.mvp .overall { color:#ffd700 !important; }
+.mvp-crown { text-align:center; font-size:0.85rem; line-height:1; margin-bottom:1px; }
+.card-top { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+.goals-badge { background:rgba(249,115,22,0.15); border:1px solid rgba(249,115,22,0.4); color:#f97316; font-size:0.52rem; font-weight:700; letter-spacing:1px; padding:3px 6px; border-radius:5px; text-transform:uppercase; white-space:nowrap; flex-shrink:0; }
+.ovr-block { display:flex; flex-direction:column; align-items:center; flex:1; }
+.overall { font-size:2.1rem; font-weight:900; line-height:1; text-align:center; }
+.pos-badge { font-size:0.5rem; font-weight:700; letter-spacing:2px; color:#475569; text-transform:uppercase; text-align:center; margin-top:1px; }
+.captain-badge { font-size:1.1rem; line-height:1; flex-shrink:0; width:22px; text-align:center; }
+.captain-placeholder { width:22px; flex-shrink:0; }
+.player-name { text-align:center; font-size:1.05rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; }
+.stats { display:grid; grid-template-columns:repeat(2,1fr); gap:4px; }
+.stat { display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.4); padding:4px 7px; border-radius:5px; font-size:0.73rem; }
+.stat-label { color:#64748b; font-weight:700; letter-spacing:1px; } .stat-value { font-weight:900; color:#cbd5e1; }
+.card[data-c="green"]  .overall{color:#00ff9d;} .card[data-c="blue"]   .overall{color:#00c3ff;}
+.card[data-c="purple"] .overall{color:#a855f7;} .card[data-c="orange"] .overall{color:#f97316;}
+.card[data-c="pink"]   .overall{color:#ec4899;}
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(5,7,13,0.93); display:flex; align-items:center; justify-content:center; z-index:2000; visibility:hidden; opacity:0; transition:opacity 0.3s; }
+.modal-overlay.active { visibility:visible; opacity:1; }
+.modal { background:#0a1018; border:2px solid #1e2d40; border-radius:18px; padding:24px 18px; max-width:680px; width:92%; max-height:82vh; overflow-y:auto; }
+.modal h2 { font-size:1.1rem; font-weight:900; letter-spacing:3px; color:#a855f7; text-transform:uppercase; margin-bottom:16px; }
+.hist-entry { background:#0d1520; border:1px solid #1e2d40; border-radius:11px; padding:12px; margin-bottom:10px; }
+.hist-entry-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
+.hist-entry-date { font-size:0.68rem; letter-spacing:2px; color:#475569; text-transform:uppercase; }
+.hist-entry-teams { font-size:0.68rem; color:#a855f7; font-weight:700; }
+.hist-team-name { font-size:0.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; }
+.hist-players { font-size:0.72rem; color:#94a3b8; margin-bottom:4px; }
+.modal-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.modal-close-btn,.modal-clear-btn { padding:10px 18px; font-size:0.82rem; font-weight:700; border-radius:10px; cursor:pointer; text-transform:uppercase; touch-action:manipulation; }
+.modal-close-btn { background:transparent; color:#475569; border:2px solid #1e2d40; }
+.modal-clear-btn { background:transparent; color:#ef4444; border:2px solid #ef444444; }
+.hist-empty { color:#475569; font-size:0.85rem; text-align:center; padding:18px 0; }
+@media(max-width:420px){
+  .title{font-size:1.9rem;} .cards{grid-template-columns:1fr;}
+  .teams{grid-template-columns:1fr;} .card-wrapper{height:auto;}
+  .card-inner{transform-style:flat;transform:none !important;transition:none;}
+  .card-back{display:none;} .card{position:relative;height:auto;min-height:210px;}
+}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<div class="overlay" id="overlay">
+  <div class="overlay-title">Sorteando...</div>
+  <div class="shuffle-names" id="shuffleNames"></div>
+</div>
+<div class="modal-overlay" id="histModal">
+  <div class="modal">
+    <h2>&#128203; Historico</h2>
+    <div id="histContent"></div>
+    <div class="modal-actions">
+      <button class="modal-close-btn" onclick="fecharHistorico()">FECHAR</button>
+      <button class="modal-clear-btn" onclick="limparHistorico()">LIMPAR</button>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="header">
+    <h1 class="title">PELADA <span>DE REC</span></h1>
+    <p class="subtitle">Sorteio dos Amazonians</p>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">Numero de Times</span>
+      <div class="team-selector">
+        <button class="team-btn active" data-n="2" onclick="selecionarTimes(2)">2</button>
+        <button class="team-btn" data-n="3" onclick="selecionarTimes(3)">3</button>
+        <button class="team-btn" data-n="4" onclick="selecionarTimes(4)">4</button>
+        <button class="team-btn" data-n="5" onclick="selecionarTimes(5)">5</button>
+      </div>
+    </div>
+  </div>
+  <p class="section-label">Nome + Gols &mdash; min. <span id="minLabel">4</span> jogadores (multiplo de <span id="multLabel">2</span>)</p>
+  <div class="input-grid" id="inputGrid"></div>
+  <div class="actions">
+    <button class="reset-btn" onclick="resetar()">LIMPAR</button>
+    <button class="hist-btn" onclick="abrirHistorico()">HISTORICO</button>
+    <button class="save-btn" onclick="salvarJogadores()">SALVAR</button>
+    <button class="draw-btn" id="drawBtn" onclick="sortearTimes()">SORTEAR</button>
+    <button class="share-btn" id="shareBtn" onclick="compartilhar()">COMPARTILHAR</button>
+  </div>
+  <div class="saved-indicator" id="savedIndicator">&#10003; Jogadores salvos!</div>
+  <div class="balance-info" id="balanceInfo">Balanceado por gols &mdash; diferenca OVR: <b id="balanceDiff">0</b> pts</div>
+  <div class="funny-banner" id="funnyBanner"><p><span id="funnyEmoji"></span> <span id="funnyText"></span></p></div>
+  <div class="teams" id="teamsContainer"></div>
+</div>
+<script>
+var CORES=['green','blue','purple','orange','pink'];
+var NOMES=['Time A','Time B','Time C','Time D','Time E'];
+var numTimes=2;
+var ultimoSorteio=null;
+var NICK_PREFIXES=['Os','Time dos','Esquadrao dos','Clube dos','Pelotao dos'];
+var NICK_SUFFIXES=['Cansados','Trava Tudo','Sem Defesa','Perna de Pau','Goleadores','Guerreiros','Invictos','Perdidos','Favoritos','Azarados','Campeoes','Reservas'];
+var FUNNY_COMMENTS=['Deus abencoe quem ficou no Time B...','O arbitro ja pediu demissao antes de comecar','Alguem chama o SAMU pro Time C','Esse sorteio foi justo... ou foi?','Time A ta favorito. Time A sempre ta favorito.','Quem perdeu pode culpar o algoritmo','O goleiro ja ta chorando e o jogo nem comecou','Esse time ai nao ganha nem no FIFA 98','Balanceado? Sim. Justo? Nunca.','Ja avisa pro pessoal levar gelo, vai precisar','Tem time ai que vai precisar de milagre','O campo vai sofrer hoje','Esse sorteio foi feito por IA. A culpa e dela.','Hoje tem sangue, suor e muito gol contra','Preparem as desculpas, vai ser feio'];
+var FUNNY_EMOJIS=['\uD83D\uDE02','\uD83E\uDD23','\uD83D\uDE2D','\u26BD','\uD83D\uDD25','\uD83E\uDD14','\uD83D\uDC40','\uD83D\uDE31','\uD83C\uDF89','\uD83D\uDCAA'];
+function embaralhar(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function rv(b){var v=b+Math.floor(Math.random()*17)-8;return v<40?40:(v>99?99:v);}
+function golsParaOverall(g){if(!g||g<0)g=0;if(g===0)return 70;var v=70+Math.round(Math.log(g+1)*10.5);return v>99?99:v;}
+function gerarNickname(){return NICK_PREFIXES[Math.floor(Math.random()*NICK_PREFIXES.length)]+' '+NICK_SUFFIXES[Math.floor(Math.random()*NICK_SUFFIXES.length)];}
+function somaOvr(g){var s=0;for(var i=0;i<g.length;i++)s+=g[i].overall;return s;}
+function balancear(jogadores,n){var sorted=jogadores.slice().sort(function(a,b){return b.overall-a.overall;});var times=[];for(var i=0;i<n;i++)times.push([]);var rodada=0,pos=0;for(var i=0;i<sorted.length;i++){var idx=(rodada%2===0)?pos:(n-1-pos);times[idx].push(sorted[i]);pos++;if(pos>=n){pos=0;rodada++;}}return times;}
+function toast(msg,tipo){var el=document.getElementById('toast');el.innerHTML=msg;el.className='toast show'+(tipo?' '+tipo:'');setTimeout(function(){el.className='toast';},3500);}
+function selecionarTimes(n){numTimes=n;var btns=document.querySelectorAll('.team-btn');for(var i=0;i<btns.length;i++){btns[i].className=(parseInt(btns[i].getAttribute('data-n'))===n)?'team-btn active':'team-btn';}document.getElementById('minLabel').textContent=n*2;document.getElementById('multLabel').textContent=n;gerarInputs();}
+function gerarInputs(){var grid=document.getElementById('inputGrid');var total=numTimes*4;var html='';for(var i=1;i<=total;i++){html+='<div class="player-row"><div class="row-num">'+i+'</div><input class="player-input" placeholder="Jogador '+i+'"><input class="goals-input" type="number" min="0" max="999" placeholder="Gols"></div>';}grid.innerHTML=html;carregarJogadoresSalvos();}
+function encontrarMvp(times){var best=-1;for(var t=0;t<times.length;t++)for(var g=0;g<times[t].length;g++)if(times[t][g].overall>best)best=times[t][g].overall;return best;}
+function criarCard(jog,cor,cap,mvp,idx){var capB=cap?'<div class="captain-badge">\u2B50</div>':'<div class="captain-placeholder"></div>';var crown=mvp?'<div class="mvp-crown">\uD83D\uDC51</div>':'';return '<div class="card-wrapper" id="cw-'+idx+'"><div class="card-inner"><div class="card-back">\u26BD</div><div class="card'+(cap?' captain':'')+(mvp?' mvp':'')+'" data-c="'+cor+'">'+crown+'<div class="card-top"><div class="goals-badge">'+jog.gols+' gols</div><div class="ovr-block"><div class="overall">'+jog.overall+'</div><div class="pos-badge">PELADA PRO</div></div>'+capB+'</div><div class="player-name">'+jog.nome+'</div><div class="stats"><div class="stat"><span class="stat-label">VEL</span><span class="stat-value">'+rv(jog.overall)+'</span></div><div class="stat"><span class="stat-label">FIN</span><span class="stat-value">'+rv(jog.overall)+'</span></div><div class="stat"><span class="stat-label">DRI</span><span class="stat-value">'+rv(jog.overall)+'</span></div><div class="stat"><span class="stat-label">FIS</span><span class="stat-value">'+rv(jog.overall)+'</span></div></div></div></div></div>';}
+function revelarCartas(total){for(var i=0;i<total;i++){(function(idx){setTimeout(function(){var el=document.getElementById('cw-'+idx);if(el)el.className='card-wrapper revealed';},200*idx);})(i);}}
+function corHex(c){return{green:'#00ff9d',blue:'#00c3ff',purple:'#a855f7',orange:'#f97316',pink:'#ec4899'}[c]||'#fff';}
+function renderizarTimes(times,nicks){var container=document.getElementById('teamsContainer');container.innerHTML='';var somas=[];for(var t=0;t<times.length;t++)somas.push(somaOvr(times[t]));var maxS=somas[0],minS=somas[0];for(var t=1;t<somas.length;t++){if(somas[t]>maxS)maxS=somas[t];if(somas[t]<minS)minS=somas[t];}var mvpOvr=encontrarMvp(times);var gIdx=0;for(var t=0;t<times.length;t++){var grupo=times[t];var capIdx=0;for(var g=1;g<grupo.length;g++)if(grupo[g].overall>grupo[capIdx].overall)capIdx=g;var cards='';for(var g=0;g<grupo.length;g++){cards+=criarCard(grupo[g],CORES[t],g===capIdx,grupo[g].overall===mvpOvr,gIdx);gIdx++;}var media=Math.round(somas[t]/grupo.length);var nick=nicks?nicks[t]:gerarNickname();container.innerHTML+='<div class="team" data-c="'+CORES[t]+'"><div class="team-header"><h2 class="team-title">'+NOMES[t]+'</h2><span class="team-ovr">OVR: '+media+'</span><button class="reshuffle-btn" onclick="reshuffleTime('+t+')">\uD83D\uDD00</button></div><div class="team-nickname">'+nick+'</div><div class="cards">'+cards+'</div></div>';}document.getElementById('balanceInfo').style.display='block';document.getElementById('balanceDiff').textContent=maxS-minS;revelarCartas(gIdx);}
+function animarSorteio(nomes,cb){var ov=document.getElementById('overlay');var sd=document.getElementById('shuffleNames');ov.className='overlay active';var ticks=0;var iv=setInterval(function(){var sh=embaralhar(nomes).slice(0,6);var h='';for(var i=0;i<sh.length;i++)h+='<div class="shuffle-name">'+sh[i]+'</div>';sd.innerHTML=h;ticks++;if(ticks>=24){clearInterval(iv);setTimeout(function(){ov.className='overlay';sd.innerHTML='';cb();},350);}},80);}
+function sortearTimes(){var nI=document.querySelectorAll('.player-input');var gI=document.querySelectorAll('.goals-input');var jogadores=[];for(var i=0;i<nI.length;i++){var nome=nI[i].value.trim();if(nome!==''){var gols=parseInt(gI[i].value)||0;if(gols<0)gols=0;jogadores.push({nome:nome,gols:gols,overall:golsParaOverall(gols)});}}var minJ=numTimes*2;if(jogadores.length<minJ){toast('Minimo '+minJ+' jogadores para '+numTimes+' times!');return;}if(jogadores.length%numTimes!==0){toast('Numero de jogadores deve ser multiplo de '+numTimes+'!');return;}var btn=document.getElementById('drawBtn');btn.disabled=true;var nomes=[];for(var k=0;k<jogadores.length;k++)nomes.push(jogadores[k].nome);animarSorteio(nomes,function(){var times=balancear(embaralhar(jogadores),numTimes);var nicks=[];for(var t=0;t<times.length;t++)nicks.push(gerarNickname());ultimoSorteio={times:times,nicknames:nicks};renderizarTimes(times,nicks);document.getElementById('funnyText').textContent=FUNNY_COMMENTS[Math.floor(Math.random()*FUNNY_COMMENTS.length)];document.getElementById('funnyEmoji').textContent=FUNNY_EMOJIS[Math.floor(Math.random()*FUNNY_EMOJIS.length)];document.getElementById('funnyBanner').style.display='block';document.getElementById('shareBtn').style.display='inline-block';salvarHistorico(times,numTimes);btn.disabled=false;document.getElementById('teamsContainer').scrollIntoView({behavior:'smooth',block:'start'});});}
+function reshuffleTime(tIdx){if(!ultimoSorteio)return;ultimoSorteio.times[tIdx]=embaralhar(ultimoSorteio.times[tIdx]);renderizarTimes(ultimoSorteio.times,ultimoSorteio.nicknames);toast(NOMES[tIdx]+' remisturado!','green');}
+function resetar(){var nI=document.querySelectorAll('.player-input');var gI=document.querySelectorAll('.goals-input');for(var i=0;i<nI.length;i++){nI[i].value='';gI[i].value='';}document.getElementById('teamsContainer').innerHTML='';document.getElementById('balanceInfo').style.display='none';document.getElementById('funnyBanner').style.display='none';document.getElementById('shareBtn').style.display='none';ultimoSorteio=null;if(nI[0])nI[0].focus();}
+function salvarJogadores(){var nI=document.querySelectorAll('.player-input');var gI=document.querySelectorAll('.goals-input');var data={numTimes:numTimes,jogadores:[]};for(var i=0;i<nI.length;i++)data.jogadores.push({nome:nI[i].value,gols:gI[i].value});try{localStorage.setItem('rec_jogadores',JSON.stringify(data));var ind=document.getElementById('savedIndicator');ind.style.display='block';setTimeout(function(){ind.style.display='none';},2500);toast('Jogadores salvos!','blue');}catch(e){toast('Erro ao salvar!');}}
+function carregarJogadoresSalvos(){try{var raw=localStorage.getItem('rec_jogadores');if(!raw)return;var data=JSON.parse(raw);if(!data||!data.jogadores||data.numTimes!==numTimes)return;var nI=document.querySelectorAll('.player-input');var gI=document.querySelectorAll('.goals-input');for(var i=0;i<data.jogadores.length&&i<nI.length;i++){nI[i].value=data.jogadores[i].nome||'';gI[i].value=data.jogadores[i].gols||'';}}catch(e){}}
+function salvarHistorico(times,n){try{var raw=localStorage.getItem('rec_historico');var hist=raw?JSON.parse(raw):[];var entry={data:new Date().toLocaleString('pt-BR'),numTimes:n,times:[]};for(var t=0;t<times.length;t++){var nomes=[];for(var g=0;g<times[t].length;g++)nomes.push(times[t][g].nome+' ('+times[t][g].gols+' gols)');entry.times.push({nome:NOMES[t],jogadores:nomes});}hist.unshift(entry);if(hist.length>5)hist=hist.slice(0,5);localStorage.setItem('rec_historico',JSON.stringify(hist));}catch(e){}}
+function abrirHistorico(){var content=document.getElementById('histContent');try{var raw=localStorage.getItem('rec_historico');var hist=raw?JSON.parse(raw):[];if(hist.length===0){content.innerHTML='<div class="hist-empty">Nenhum sorteio salvo ainda.</div>';}else{var html='';for(var i=0;i<hist.length;i++){var e=hist[i];html+='<div class="hist-entry"><div class="hist-entry-header"><span class="hist-entry-date">'+e.data+'</span><span class="hist-entry-teams">'+e.numTimes+' times</span></div>';for(var t=0;t<e.times.length;t++){html+='<div class="hist-team-name" style="color:'+corHex(CORES[t])+'">'+e.times[t].nome+'</div><div class="hist-players">'+e.times[t].jogadores.join(' | ')+'</div>';}html+='</div>';}content.innerHTML=html;}}catch(e){content.innerHTML='<div class="hist-empty">Erro ao carregar.</div>';}document.getElementById('histModal').className='modal-overlay active';}
+function fecharHistorico(){document.getElementById('histModal').className='modal-overlay';}
+function limparHistorico(){try{localStorage.removeItem('rec_historico');document.getElementById('histContent').innerHTML='<div class="hist-empty">Historico limpo!</div>';toast('Historico apagado!','green');}catch(e){}}
+function compartilhar(){if(!ultimoSorteio)return;var times=ultimoSorteio.times;var hoje=new Date().toLocaleDateString('pt-BR');var txt='PELADA DE REC - '+hoje+'\n\n';for(var t=0;t<times.length;t++){var media=Math.round(somaOvr(times[t])/times[t].length);txt+=NOMES[t]+' (OVR: '+media+')\n';for(var g=0;g<times[t].length;g++)txt+='- '+times[t][g].nome+' ('+times[t][g].gols+' gols)\n';txt+='\n';}if(navigator.share){navigator.share({title:'Pelada de REC',text:txt}).then(function(){toast('Compartilhado!','green');}).catch(function(){copiarFallback(txt);});}else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast('Copiado! Cola no Zap!','green');}).catch(function(){copiarFallback(txt);});}else{copiarFallback(txt);}}
+function copiarFallback(txt){var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.top='-9999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copiado! Cola no Zap!','green');}catch(e){toast('Nao foi possivel copiar.');}document.body.removeChild(ta);}
+document.addEventListener('keydown',function(e){if(e.key==='Enter')sortearTimes();if(e.key==='Escape')fecharHistorico();});
+document.getElementById('histModal').addEventListener('click',function(e){if(e.target===this)fecharHistorico();});
+selecionarTimes(2);
+</script>
+</body>
+</html>
